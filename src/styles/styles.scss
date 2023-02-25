@@ -1,1 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
+
+.leaflet-container {
+    margin-top: 100px;
+    flex: auto;
+    height: 50%;
+    width: 50%;
+    position: absolute;
+    border: 2px solid rgb(255, 0, 0);
+}
