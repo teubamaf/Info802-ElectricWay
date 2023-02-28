@@ -1,10 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
 
-.leaflet-container {
-    margin-top: 100px;
-    flex: auto;
-    height: 50%;
-    width: 50%;
-    position: absolute;
-    border: 2px solid rgb(255, 0, 0);
+.leaflet-control-zoom-in span {
+  position: absolute;
+  top: 0;
+  left: 8px;
+}
+
+.leaflet-control-zoom-out span {
+  position: absolute;
+  top: 30px;
+  left: 8px;
+
 }
