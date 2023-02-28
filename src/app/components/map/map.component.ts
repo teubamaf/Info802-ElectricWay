@@ -1,11 +1,23 @@
-import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
 import * as L from 'leaflet';
-import { tap } from 'rxjs';
-import * as geojson from 'geojson';
+import('leaflet-routing-machine');
+import { Observable, tap, zip } from 'rxjs';
 import { MapService } from 'src/app/services/map.service';
 
+const iconRetinaUrl = 'assets/marker-icon-2x.png';
+const iconUrl = 'assets/marker-icon.png';
+const shadowUrl = 'assets/marker-shadow.png';
+const iconDefault = L.icon({
+  iconRetinaUrl,
+  iconUrl,
+  shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
+  shadowSize: [41, 41]
+});
+L.Marker.prototype.options.icon = iconDefault;
 
 @Component({
   selector: 'app-map',
@@ -14,15 +26,21 @@ import { MapService } from 'src/app/services/map.service';
 })
 export class MapComponent implements OnInit {
 
-  private map!: any;
   startCity!: string;
   destCity!: string;
-  mapService: any;
 
-  constructor(private http: HttpClient) { }
+  startCities$!: Observable<string[]>;
+  destCities$!: Observable<string[]>;
+
+  private map!: any;
+
+  constructor(private mapService: MapService) { }
 
   ngOnInit(): void {
     this.initMap();
+
+    this.startCities$ = this.mapService.startCities$;
+    this.destCities$ = this.mapService.destCities$;
   }
 
   private initMap(): void {
@@ -33,21 +51,35 @@ export class MapComponent implements OnInit {
 
     const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      minZoom: 3,
+      minZoom: 1,
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     });
 
     tiles.addTo(this.map);
-
   }
 
-   
   onSubmitForm() {
-    this.mapService.getGeoCoding(this.startCity).pipe(
+    
+    zip(
+      this.mapService.getGeoCoding(this.startCity),
+      this.mapService.getGeoCoding(this.destCity)
+    ).pipe(
       tap(value => {
-        this.map.setView(new L.LatLng(value.lat, value.lon), 7, { animation: true });
-        L.marker(new L.LatLng(value.lat, value.lon)).addTo(this.map);
+        const start = value[0];
+        const dest = value[1];
+
+        const waypoint1 = new L.LatLng(start.lat, start.lon);
+        const waypoint2 = new L.LatLng(dest.lat, dest.lon);
+
+        this.traceRoute([waypoint1, waypoint2]);
       })
     ).subscribe();
+  }
+
+
+  private traceRoute(waypoints: L.LatLng[]) {
+    const routing = L.Routing.control({
+      waypoints: waypoints
+    }).addTo(this.map);
   }
 }

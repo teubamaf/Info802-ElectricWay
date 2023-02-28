@@ -47,17 +47,5 @@ export class MapService {
     );
   }
 
-
-  getStartCitiesSuggestions(cityName: string) {
-    this.getCities(cityName).pipe(
-      tap(value => this.startCities.next(value))
-    ).subscribe();
-  }
-
-  getDestCitiesSuggestions(cityName: string) {
-    this.getCities(cityName).pipe(
-      tap(value => this.destCities.next(value))
-    ).subscribe();
-  } 
   
 }

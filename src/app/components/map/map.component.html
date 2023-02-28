@@ -1,9 +1,30 @@
-<form>
-  <label>Start City</label>
-  <input id="inputtype" [(ngModel)]="startCity">
-  <button (click)="onSubmitForm()">Search</button>
-  <label for="">Dest City</label>
-  <input id="inputtype" [(ngModel)]="destCity" >
+<form (ngSubmit)="onSubmitForm()">
+  <datalist *ngIf="startCities$ | async as startCities" id="startCitySuggestions">
+      <option *ngFor="let city of startCities">{{ city }}</option>
+  </datalist>
+
+  <input type="search" 
+      id="Search"
+      name="startSearch"
+      placeholder="Ville de départ"
+      list="startCitySuggestions"
+      [(ngModel)]="startCity"
+  >
+
+  <datalist *ngIf="destCities$ | async as destCities" id="startCitySuggestions">
+      <option *ngFor="let city of destCities">{{ city }}</option>
+  </datalist>
+
+  <input type="search" 
+      id="Search"
+      name="destSearch"
+      placeholder="Ville d'Arrivée"
+      list="destCitySuggestions"
+      [(ngModel)]="destCity"
+  >
+
+  <button type="submit">Chercher</button>    
 </form>
+
 
 <div id="map"></div>
