@@ -3,6 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import * as L from 'leaflet';
 import { tap } from 'rxjs';
+import * as geojson from 'geojson';
+import { MapService } from 'src/app/services/map.service';
+
 
 @Component({
   selector: 'app-map',
@@ -14,6 +17,7 @@ export class MapComponent implements OnInit {
   private map!: any;
   startCity!: string;
   destCity!: string;
+  mapService: any;
 
   constructor(private http: HttpClient) { }
 
@@ -36,8 +40,14 @@ export class MapComponent implements OnInit {
     tiles.addTo(this.map);
 
   }
-  onSubmitForm(){
-    console.log(this.startCity);
-    console.log(this.destCity);
+
+   
+  onSubmitForm() {
+    this.mapService.getGeoCoding(this.startCity).pipe(
+      tap(value => {
+        this.map.setView(new L.LatLng(value.lat, value.lon), 7, { animation: true });
+        L.marker(new L.LatLng(value.lat, value.lon)).addTo(this.map);
+      })
+    ).subscribe();
   }
 }
