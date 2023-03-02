@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { map, Observable } from 'rxjs';
-import { SoapCalculService } from 'src/app/services/soap-calcul.service';
+import { SoapCalculService } from 'app/services/soap-calcul.service';
 
 @Component({
   selector: 'app-calcul',
