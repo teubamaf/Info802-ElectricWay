@@ -12,7 +12,7 @@ import { MapComponent } from './components/map/map.component';
   declarations: [
     AppComponent,
     CalculComponent,
-    MapComponent
+    MapComponent,
   ],
   imports: [
     BrowserModule,
