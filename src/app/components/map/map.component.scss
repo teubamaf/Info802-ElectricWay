@@ -1,25 +1,29 @@
-#map{
+#map {
     height: 100%;
     width: 100%;
 }
 
-form{
-    display: flex;
-    margin-top: 10px;
-    
+input {
+    width: 35%;
+    margin: 2%;
 }
 
-#Search {
-    display: flex;
-    width: 250px;
-    margin-right: 50px;
+button {
+    width: 15%;
+    margin: 2%;
+    display: inline;
 }
 
-label{
-    margin-top: 10px;
-    margin-right: 10px;
-}
 
-button{
-    width: 100px;
+@media only screen and (max-width: 576px) {
+    input {
+        width: 90%;
+        margin: 2%;
+    }
+
+    button {
+        width: 90%;
+        margin: 2%;
+        display: block;
+    }
 }

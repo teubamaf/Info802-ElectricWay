@@ -24,8 +24,6 @@ export class MapService {
 
     return this.http.get<any>(uri).pipe(
       map(value => {
-        console.log(value);
-        console.log(value[0].lat + value[0].lon);
         return  { lat: value[0].lat, lon: value[0].lon };
       })
     );
@@ -47,5 +45,17 @@ export class MapService {
     );
   }
 
+
+  getStartCitiesSuggestions(cityName: string) {
+    this.getCities(cityName).pipe(
+      tap(value => this.startCities.next(value))
+    ).subscribe();
+  }
+
+  getDestCitiesSuggestions(cityName: string) {
+    this.getCities(cityName).pipe(
+      tap(value => this.destCities.next(value))
+    ).subscribe();
+  } 
   
 }

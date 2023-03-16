@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import * as L from 'leaflet';
 import('leaflet-routing-machine');
-import { Observable, tap, zip } from 'rxjs';
-import { MapService } from 'app/services/map.service';
-import { BornesService } from 'app/services/bornes.service';
+import { Observable, tap, zip, zipAll } from 'rxjs';
+import { BorneService } from 'src/app/services/borne.service';
+import { InfoService } from 'src/app/services/info.service';
+import { MapService } from 'src/app/services/map.service';
+import { SoapCalculService } from 'src/app/services/soap-calcul.service';
+import { ApiElectricService } from 'src/app/services/api-electric.service';
 
 const iconRetinaUrl = 'assets/marker-icon-2x.png';
 const iconUrl = 'assets/marker-icon.png';
@@ -25,7 +28,6 @@ L.Marker.prototype.options.icon = iconDefault;
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss']
 })
-
 export class MapComponent implements OnInit {
 
   startCity!: string;
@@ -35,76 +37,28 @@ export class MapComponent implements OnInit {
   destCities$!: Observable<string[]>;
 
   private map!: any;
+  private route!: any;
 
-  constructor(private mapService: MapService , private borneService : BornesService) { }
+
+  autonomyKm: number = 0;
+
+  constructor(
+    private mapService: MapService,
+    private borneService: BorneService,
+    private soapCalculService: SoapCalculService,
+    private infoService: InfoService,
+    private apiservice : ApiElectricService
+  ) { }
 
   ngOnInit(): void {
     this.initMap();
 
     this.startCities$ = this.mapService.startCities$;
     this.destCities$ = this.mapService.destCities$;
-  }
 
-  private firstTraceRoute(waypoints: L.LatLng[]) {
-    const routing = L.Routing.control({
-      waypoints: waypoints
-    }).addTo(this.map);
-
-    routing.on('routesfound', (e) => {
-      const distanceKm = e.routes[0].summary.totalDistance / 1000;
-      const coords = e.routes[0].coordinates;
-      const autonomyKm = 500;
-
-      // we calcul when we need electric power
-      let index = this.calculIndexArray(distanceKm, autonomyKm, coords.length);
-      
-      // if we need it on the road
-      if (index != null) {
-        const observables: Observable<any>[] = [];
-
-        // for each, we want to find the nearest charging point
-        index.forEach((p: number) => {
-          if (coords[p]) {
-            // we add all the query in an array to send them at the same time
-            observables.push(this.borneService.getBorne(coords[p].lat, coords[p].lng, 100000));
-          }
-        });
-
-        // send all the query
-        zip(...observables).pipe(
-          tap(value => {
-            // we create a new route form start to dest passing through charging point            
-            const newWaypoints: any[] = [];
-            newWaypoints.push(waypoints[0]);
-
-            value.forEach(v => {
-              newWaypoints.push(new L.LatLng(v.fields.ylatitude, v.fields.xlongitude))
-            });
-
-            newWaypoints.push(waypoints[1]);
-
-            // trace new route and delete old route
-            this.secondTraceRoute(newWaypoints, routing);
-          })
-        ).subscribe();
-      }
-    });
-  }
-
-  private secondTraceRoute(waypoints: L.LatLng[], routeToRemove: any) {
-    // trace new route
-    const routing = L.Routing.control({
-      waypoints: waypoints
-    }).addTo(this.map);
-
-    // delete old route
-    this.map.removeControl(routeToRemove);
-
-    routing.on('routesfound', (e) => {
-      const distanceKm = e.routes[0].summary.totalDistance / 1000;
-          
-      console.log('distanceKm : ' + distanceKm);
-    })
+    this.infoService.autonomy$.pipe(
+      tap(value => this.autonomyKm = value)
+    ).subscribe();
   }
 
   private initMap(): void {
@@ -122,7 +76,100 @@ export class MapComponent implements OnInit {
     tiles.addTo(this.map);
   }
 
-  calculIndexArray(distanceKm: number, autonomy: number, lengthCoords: number) {
+  onSubmitForm() {
+    
+    if (this.route) {
+      this.map.removeControl(this.route);
+    }
+
+    zip(
+      this.mapService.getGeoCoding(this.startCity),
+      this.mapService.getGeoCoding(this.destCity)
+    ).pipe(
+      tap(value => {
+        const start = value[0];
+        const dest = value[1];
+
+        const waypoint1 = new L.LatLng(start.lat, start.lon);
+        const waypoint2 = new L.LatLng(dest.lat, dest.lon);
+
+        this.firstTraceRoute([waypoint1, waypoint2]);
+      })
+    ).subscribe();
+  }
+
+
+  private firstTraceRoute(waypoints: L.LatLng[]) {
+    const routing = L.Routing.control({
+      waypoints: waypoints
+    }).addTo(this.map);
+
+    routing.on('routesfound', (e) => {
+      const distanceKm = e.routes[0].summary.totalDistance / 1000;
+      const coords = e.routes[0].coordinates;
+
+      let index = this.calculIndexArray(distanceKm, this.autonomyKm, coords.length);
+      
+      if (index != null) {
+        
+        const observables: Observable<any>[] = [];
+
+        index.forEach((p: number) => {
+          if (coords[p]) {
+            observables.push(this.borneService.getBorne(coords[p].lat, coords[p].lng, 100000));
+          }
+        });
+
+        zip(...observables).pipe(
+          tap(value => {     
+            const newWaypoints: any[] = [];
+            newWaypoints.push(waypoints[0]);
+
+            value.forEach(v => {
+              newWaypoints.push(new L.LatLng(v.fields.ylatitude, v.fields.xlongitude))
+            });
+
+            newWaypoints.push(waypoints[1]);
+
+            this.secondTraceRoute(newWaypoints, routing);
+          })
+        ).subscribe();
+      
+      } else {
+        this.secondTraceRoute(waypoints, routing);
+      }
+    });
+  }
+
+  private secondTraceRoute(waypoints: L.LatLng[], routeToRemove: any) {
+    this.route = L.Routing.control({
+      waypoints: waypoints
+    }).addTo(this.map);
+
+    this.map.removeControl(routeToRemove);
+
+    this.route.on('routesfound', (e: any) => {
+      const d = e.routes[0].summary.totalDistance / 1000;
+      const distanceKm = parseFloat(d.toFixed(1));
+      
+      const tempsRecharge = 0.5;
+      const nbRecharge = waypoints.length-2;
+      const vitesseKm = 100;
+
+      this.apiservice.getprix(distanceKm);
+
+      this.soapCalculService.calculDuration(distanceKm, vitesseKm, tempsRecharge, nbRecharge).pipe(
+        tap(value => {
+          this.infoService.setDuration(value);
+          this.infoService.setDistance(distanceKm);
+          this.infoService.setNbRecharge(nbRecharge);
+        })
+      ).subscribe();
+      
+    })
+  }
+
+  private calculIndexArray(distanceKm: number, autonomy: number, lengthCoords: number) {
     if (autonomy < distanceKm) {
       const nbReloads = distanceKm / autonomy;
       let index = (autonomy * lengthCoords) / distanceKm;
@@ -141,22 +188,8 @@ export class MapComponent implements OnInit {
     return null;
   }
 
-  onSubmitForm() {
-    
-    zip(
-      this.mapService.getGeoCoding(this.startCity),
-      this.mapService.getGeoCoding(this.destCity)
-    ).pipe(
-      tap(value => {
-        const start = value[0];
-        const dest = value[1];
 
-        const waypoint1 = new L.LatLng(start.lat, start.lon);
-        const waypoint2 = new L.LatLng(dest.lat, dest.lon);
-
-        this.firstTraceRoute([waypoint1, waypoint2]);
-      })
-    ).subscribe();
+  private placeMarker(lat: number, lon: number) {
+    L.marker(new L.LatLng(lat, lon)).addTo(this.map);
   }
-
 }

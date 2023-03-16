@@ -63,17 +63,15 @@
               "./node_modules/leaflet/dist/leaflet.css",
               "./node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css"
             ],
-            "scripts": [
-              "node_modules/leaflet/dist/leaflet.js"
-            ]
+            "scripts": []
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "1mb",
+                  "maximumError": "3mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -128,14 +126,13 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [
-            ]
+            "scripts": []
           }
         }
       }
     }
   },
   "cli": {
-    "analytics": "b27556cb-dce7-466d-8532-3be6e283c7da"
+    "analytics": "3308abc0-82fc-4a43-b0d7-c077233a37e2"
   }
 }

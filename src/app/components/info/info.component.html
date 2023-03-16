@@ -1,0 +1,18 @@
+
+        
+    <label for="durationInput">Temps de trajet</label>
+    <input id="durationInput" name="duration"  value="{{duration$ | async | hours }}" readonly>
+
+    <label for="distanceInput">Distance en km</label>
+    <input id="distanceInput" name="distance"  value="{{distance$ | async}}" readonly>
+
+    <label for="nbRechargeInput">Nombre de recharge</label>
+    <input id="nbRechargeInput" name="nbRecharge"  value="{{nbRecharge$ | async}}" readonly>
+
+    <label for="autonomyInput">Autonomie du véhicule</label>
+    <input id="autonomyInput" name="autonomy"  value="{{autonomy$ | async}} Km" readonly>
+
+    <label for="autonomyInput">Prix du trajet</label>
+    <input id="autonomyInput" name="autonomy"  value="{{price$ | async}} " readonly>
+
+
